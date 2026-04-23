@@ -12,6 +12,8 @@
 - OpenClaw 版本正常显示
 - 默认模型配置为 `openai-codex/gpt-5.4`
 - OpenClaw 能识别 OpenAI Codex OAuth 登录凭据
+- OpenClaw Gateway 可以作为 macOS 后台服务运行
+- 可以在浏览器打开 OpenClaw 网页控制面板
 
 ## 一、打开终端
 
@@ -285,7 +287,125 @@ openclaw config validate
 Config valid: ~/.openclaw/openclaw.json
 ```
 
-## 十、最终配置文件长什么样
+## 十、安装并启动 Gateway 服务
+
+如果你希望 OpenClaw 在本机持续提供网页控制面板和本地 Gateway，建议把 Gateway 安装成 macOS 用户级 LaunchAgent。
+
+### 1. 先补上 `gateway.mode`
+
+本次机器上第一次启动 Gateway 时，OpenClaw 提示：
+
+```text
+Gateway start blocked: existing config is missing gateway.mode.
+```
+
+因此需要先写入：
+
+```sh
+openclaw config set gateway.mode local
+```
+
+正常会看到类似：
+
+```text
+Updated gateway.mode. Restart the gateway to apply.
+```
+
+### 2. 安装 Gateway 为 LaunchAgent
+
+执行：
+
+```sh
+openclaw gateway install --force
+```
+
+正常输出类似：
+
+```text
+Installed LaunchAgent: /Users/你的用户名/Library/LaunchAgents/ai.openclaw.gateway.plist
+Logs: /Users/你的用户名/.openclaw/logs/gateway.log
+```
+
+说明：
+
+- `LaunchAgent` 是 macOS 用户级后台服务
+- 这样以后登录系统后，OpenClaw Gateway 更容易被统一管理
+- `--force` 表示如果之前装过，就覆盖更新
+
+### 3. 启动 Gateway 服务
+
+执行：
+
+```sh
+openclaw gateway start
+```
+
+如果你刚修改过配置，也可以直接执行：
+
+```sh
+openclaw gateway restart
+```
+
+### 4. 检查 Gateway 是否真的运行起来了
+
+执行：
+
+```sh
+openclaw gateway status
+```
+
+正常结果应重点包含：
+
+```text
+Service: LaunchAgent (loaded)
+Runtime: running
+RPC probe: ok
+Listening: 127.0.0.1:18789
+Dashboard: http://127.0.0.1:18789/
+```
+
+也可以进一步检查健康状态：
+
+```sh
+openclaw gateway health
+```
+
+正常输出类似：
+
+```text
+Gateway Health
+OK
+```
+
+## 十一、打开网页控制面板
+
+Gateway 正常运行后，执行：
+
+```sh
+openclaw dashboard
+```
+
+OpenClaw 会：
+
+- 自动生成或读取本地登录 token
+- 把带 token 的 Dashboard URL 复制到剪贴板
+- 自动在默认浏览器中打开控制面板
+
+本次机器上的实际输出类似：
+
+```text
+Dashboard URL: http://127.0.0.1:18789/#token=...
+Copied to clipboard.
+Opened in your browser. Keep that tab to control OpenClaw.
+```
+
+如果你只想打印地址、不自动打开浏览器，可以执行：
+
+```sh
+openclaw dashboard --no-open
+```
+
+## 十二、最终配置文件长什么样
 
 本次生成的配置文件是：
 
@@ -307,6 +427,9 @@ Config valid: ~/.openclaw/openclaw.json
       }
     }
   },
+  "gateway": {
+    "mode": "local"
+  },
   "meta": {
     "lastTouchedVersion": "2026.4.15",
     "lastTouchedAt": "2026-04-21T16:53:42.257Z"
@@ -320,7 +443,13 @@ Config valid: ~/.openclaw/openclaw.json
 "primary": "openai-codex/gpt-5.4"
 ```
 
-## 十一、新开终端后再检查一次
+以及：
+
+```json
+"mode": "local"
+```
+
+## 十三、新开终端后再检查一次
 
 关闭当前终端，重新打开一个新终端。
 
@@ -330,6 +459,7 @@ Config valid: ~/.openclaw/openclaw.json
 command -v openclaw
 openclaw --version
 openclaw models status --plain
+openclaw gateway status
 ```
 
 正常结果应该包含：
@@ -338,9 +468,10 @@ openclaw models status --plain
 /Users/你的用户名/.local/bin/openclaw
 OpenClaw 2026.4.15
 Default       : openai-codex/gpt-5.4
+Runtime: running
 ```
 
-## 十二、常见问题
+## 十四、常见问题
 
 ### 1. command not found: openclaw
 
@@ -415,7 +546,71 @@ openclaw models set openai-codex/gpt-5.4
 openclaw models status --plain
 ```
 
-## 十三、本次机器上的实际结果
+### 6. Gateway status 提示 missing gateway.mode
+
+说明配置文件里还没有：
+
+```json
+"gateway": {
+  "mode": "local"
+}
+```
+
+执行：
+
+```sh
+openclaw config set gateway.mode local
+openclaw gateway restart
+```
+
+然后再检查：
+
+```sh
+openclaw gateway status
+```
+
+### 7. Gateway 服务显示 running，但端口没监听
+
+这通常意味着服务进程起来了，但启动过程中又被配置拦下。
+
+先看状态：
+
+```sh
+openclaw gateway status
+```
+
+如果看到类似：
+
+```text
+Gateway port 18789 is not listening
+Last gateway error: ... missing gateway.mode
+```
+
+按上一条补上：
+
+```sh
+openclaw config set gateway.mode local
+openclaw gateway restart
+```
+
+### 8. 网页控制面板没有自动打开
+
+先手动打印地址：
+
+```sh
+openclaw dashboard --no-open
+```
+
+再把输出中的 URL 复制到浏览器打开。
+
+如果仍然打不开，先检查：
+
+```sh
+openclaw gateway health
+openclaw gateway status
+```
+
+## 十五、本次机器上的实际结果
 
 本次 MacBook 上安装后的实际结果：
 
@@ -426,6 +621,10 @@ OpenClaw 版本: OpenClaw 2026.4.15 (041266a)
 默认模型: openai-codex/gpt-5.4
 OAuth 提供方: openai-codex
 配置校验: Config valid
+Gateway 服务: LaunchAgent loaded
+Gateway 地址: http://127.0.0.1:18789/
+Gateway 健康检查: OK
+网页控制面板: 已可在浏览器打开
 ```
 
-到这里，OpenClaw 已经安装完成，GPT 模型也已经配置完成。
+到这里，OpenClaw 已经安装完成，GPT 模型、Gateway 服务和网页控制面板也已经配置完成.
