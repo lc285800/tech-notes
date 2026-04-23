@@ -6,3 +6,5 @@
 
 - [Codex App 代理配置排障记录](./codex-app代理配置排障记录.md)
 - [OpenClaw 在 MacBook 上的安装步骤](./openclaw在macbook安装步骤.md)
+- [OpenClaw 快速入门手册](./openclaw快速入门手册.md)
+- [OpenClaw 接入 Telegram 机器人](./openclaw接入telegram机器人.md)
