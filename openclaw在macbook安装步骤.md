@@ -627,4 +627,4 @@ Gateway 健康检查: OK
 网页控制面板: 已可在浏览器打开
 ```
 
-到这里，OpenClaw 已经安装完成，GPT 模型、Gateway 服务和网页控制面板也已经配置完成.
+到这里，OpenClaw 已经安装完成，GPT 模型、Gateway 服务和网页控制面板也已经配置完成。
